@@ -34,8 +34,7 @@ here requires updating every place that states it, in the same commit.
 - Deliberate simplifications relative to the official implementation, each
   with its scheduled fix: no `1.3 tan(fov/2)` clamp on `x/z, y/z` inside `J`
   (added in phase D), no opacity compensation for dilation (added when the
-  artifact appears on real scenes, see Mip-Splatting), colors are flat RGB
-  until notebook 06.
+  artifact appears on real scenes, see Mip-Splatting).
 
 ## Renderer constants
 
@@ -58,6 +57,19 @@ z_near    = 0.05    cull before the Jacobian sees a small z
   to far, front-to-back compositing. Popping under order flips is a known,
   accepted artifact; do not "fix" it without a phase E discussion.
 - Background composited last: `img += T_final * bg`.
+
+## Spherical harmonics color (notebook 06+)
+
+- Coefficient layout `(N, 16, 3)`: 16 basis functions times RGB, degree
+  bands `l = 0..3`, official 3DGS order and sign convention. Constants
+  `C0..C3` live in `gsplat_edu/sh.py`; trained plys decode only under
+  exactly these signs.
+- Decode: `color = clip(sum_i b_i(d) sh_i + 0.5, 0, None)`. The 0.5 offset
+  makes the all-zero coefficient vector middle gray; the clip only floors.
+- View direction `d = normalize(mean - cam.eye)`, one per splat per frame
+  (the official preprocess approximation).
+- The renderer stays color-agnostic: callers run `eval_sh` and pass RGB to
+  `render_gaussians`.
 
 ## Parameter activations (training and ply loading)
 

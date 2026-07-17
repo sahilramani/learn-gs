@@ -24,7 +24,7 @@ Global acceptance for every new notebook:
 
 ## Phase B - real scenes
 
-### [ ] 06_spherical_harmonics
+### [x] 06_spherical_harmonics
 
 Forcing problem: the artifact we want to render next (a trained 3DGS `.ply`)
 stores 48 numbers per splat for color, not 3. Real captures need

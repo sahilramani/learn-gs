@@ -7,8 +7,9 @@ everywhere except phase D, where performance is the subject.
 
 ## Status
 
-Phase A complete: notebooks 01-05, package `gsplat_edu`, `scripts/render_toy.py`.
-Next task: notebook 06. Specs and order live in `docs/ROADMAP.md`.
+Notebooks 01-06 shipped: phase A (renderer, package `gsplat_edu`,
+`scripts/render_toy.py`) plus spherical harmonics (`gsplat_edu.sh`).
+Next task: notebook 07. Specs and order live in `docs/ROADMAP.md`.
 
 ## The prime rule
 

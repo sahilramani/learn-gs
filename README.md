@@ -19,9 +19,12 @@ previous version broke, and each notebook shows the break before the fix.
 | `04_projection_ewa` | The fix: linearize projection at the mean. Jacobian, Sigma2d = J W Sigma Wt Jt, where the approximation holds and where it visibly fails. |
 | `05_sort_and_composite` | Many splats per pixel: the over operator, global depth sort, full renderer. Points vs splats side by side. Code promoted to `src/gsplat_edu`. |
 
-### Phase B - real scenes [next]
+### Phase B - real scenes [in progress]
 
-- `06_spherical_harmonics`: view-dependent color. Why per-splat RGB fails on real capture, SH basis, degree 0-3 evaluation.
+| Notebook | Problem it solves |
+|---|---|
+| `06_spherical_harmonics` | View-dependent color: flat RGB averages highlights away. SH basis degrees 0-3 with the ecosystem constants and signs, sheen demo, `eval_sh` promoted to the package. |
+
 - `07_render_a_real_scene`: load a trained `.ply` from the official 3DGS release, render it with our numpy renderer. Slow, small resolution, real.
 
 ### Phase C - training
