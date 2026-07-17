@@ -1,0 +1,13 @@
+numpy
+matplotlib
+jupyterlab
+jupytext
+nbclient
+-e .
+
+# Phase B (real scenes)
+# plyfile
+
+# Phase C/D (training, CUDA)
+# torch
+# ninja
