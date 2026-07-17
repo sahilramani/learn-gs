@@ -117,7 +117,7 @@ plus the synthetic round-trip still passing, so the build stays green.
 
 ## Phase C - training
 
-### [ ] 08_fit_an_image_2d
+### [x] 08_fit_an_image_2d
 
 Forcing problem: nothing chooses the gaussians. Strip the problem to 2D
 where every gradient can be derived by hand and checked.
