@@ -188,7 +188,12 @@ All three notebooks guard on `torch.cuda.is_available()` and degrade to
 instructions on CPU machines, keeping the build green. Kernels live in
 `cuda/`, compiled at import via `torch.utils.cpp_extension.load`.
 
-### [ ] 10_cuda_naive
+Status caveat: notebooks 10-12 were written and CPU-verified on a machine
+without an NVIDIA GPU. Their GPU-side acceptance asserts (kernel parity,
+speedup, gradcheck vs 09) are in the notebooks but have not executed yet;
+the first `tools/build_notebooks.py` run on a CUDA machine executes them.
+
+### [x] 10_cuda_naive
 
 Forcing problem: the pairs/s numbers from 05 and the seconds-per-iteration
 from 09, against real scenes at 60 fps. Quote the measured gap.
@@ -199,7 +204,7 @@ Parity assert vs `gsplat_edu.render_gaussians` on the toy scene, fp32
 tolerance atol 1e-3. Timing table: numpy vs naive CUDA at growing splat
 counts.
 
-### [ ] 11_cuda_tiled
+### [x] 11_cuda_tiled
 
 Forcing problem: the naive kernel makes every pixel read every splat;
 measured bandwidth is the wall. The fix is the actual 3DGS design.
@@ -213,7 +218,7 @@ tile, one thread per pixel, shared-memory batches of splat data (batch size
 256), per-thread transmittance, block-wide early exit via
 `__syncthreads_count`. Parity vs naive; speedup curve vs splat count.
 
-### [ ] 12_cuda_backward
+### [x] 12_cuda_backward
 
 Forcing problem: notebook 09's wall-clock, now that the forward is fast.
 

@@ -33,11 +33,19 @@ previous version broke, and each notebook shows the break before the fix.
 | `08_fit_an_image_2d` | Nothing chooses the Gaussians. Stripped to 2D: the over operator's backward recurrence derived by hand, finite-difference checked on every parameter, numpy Adam fits a procedural image. `train/train_2d.py`. |
 | `09_train_3d_torch` | The 3D chain, differentiable in PyTorch: autograd owns the gradients (gradcheck-verified), a random cloud becomes the sphere from 24 self-rendered views, densify and prune with every paper deviation named. The ms/iter it prints is phase D's opening argument. `train/train_3d.py`. |
 
-### Phase D - CUDA
+### Phase D - CUDA [done, GPU verification pending]
 
-- `10_cuda_naive`: one thread per pixel, loop over all Gaussians. Correct and slow. Compiled via `torch.utils.cpp_extension`.
-- `11_cuda_tiled`: 16x16 tiles, per-tile splat lists, (tile, depth) key sort, shared-memory batched rasterization. The actual 3DGS design.
-- `12_cuda_backward`: analytic gradients in the kernel, full training loop on real data. A minimal `diff-gaussian-rasterization`.
+| Notebook | Problem it solves |
+|---|---|
+| `10_cuda_naive` | The measured CPU-vs-16ms gap. One thread per pixel, every thread reads every splat; parity with the numpy renderer, timing table, and the traffic arithmetic that convicts the design. |
+| `11_cuda_tiled` | Naive traffic scales as splats x pixels. 16x16 tiles, `(tile << 32) \| float_bits(depth)` key sort, per-tile ranges, shared-memory batches, block-wide early exit. The actual 3DGS forward. |
+| `12_cuda_backward` | Fast kernels learn nothing. Forward stores final T + last contributor; backward replays notebook 08's recurrence per tile with atomics, wrapped in `torch.autograd.Function`; training at kernel speed. A minimal `diff-gaussian-rasterization`. |
+
+Phase D notebooks were authored on a CPU-only machine: kernel cells guard on
+`torch.cuda.is_available()` and skip cleanly, and the host-side machinery
+(tile spans, key packing, ranges) is asserted everywhere. The first notebook
+build on an NVIDIA machine compiles the kernels and runs the parity,
+gradcheck, and speedup asserts.
 
 ### Phase E - measurement
 

@@ -89,6 +89,24 @@ scale   = exp(raw)          (store log-scale)
 rotation: normalize(quat)
 ```
 
+## Tile rasterizer (phase D)
+
+- Tiles are 16x16, one CUDA block per tile, one thread per pixel;
+  shared-memory batches of 256 splats; block-wide early exit via
+  `__syncthreads_count` once every pixel's `T < T_STOP`.
+- Duplication keys are int64 `(tile_id << 32) | float_bits(depth)`,
+  sorted ascending; positive-float bit patterns are order-preserving.
+  Tile spans come from the notebook-02 bounding radius on the dilated
+  covariance. `torch.sort` stands in for cub radix sort.
+- Kernel parity tolerance against bbox-truncating references is atol
+  1e-3: the 3-sigma cut and dense evaluation keep different sub-floor
+  tails. Kernels composite over a fixed black background.
+- Backward: forward stores per-pixel final `T` and last-contributor
+  count; backward walks each tile back to front with notebook 08's
+  recurrence and accumulates per-splat grads (color, opacity, 2D mean,
+  conic) via `atomicAdd`. Autograd boundary: rasterization in the
+  kernel, projection chain in torch autograd.
+
 ## Project mechanics
 
 - Package name `gsplat_edu`, src layout, editable install.

@@ -7,13 +7,16 @@ everywhere except phase D, where performance is the subject.
 
 ## Status
 
-Notebooks 01-09 shipped: phase A (renderer, package `gsplat_edu`,
+Notebooks 01-12 shipped: phase A (renderer, package `gsplat_edu`,
 `scripts/render_toy.py`), phase B (spherical harmonics, trained-ply
 loading; notebook 07 degrades to a synthetic stand-in when `data/` has no
 real scene), phase C (hand-derived 2D backward, torch 3D training;
-`train/train_2d.py`, `train/train_3d.py`). Next task: notebook 10 (phase
-D, needs an NVIDIA GPU; the notebook must degrade cleanly on CPU). Specs
-and order live in `docs/ROADMAP.md`.
+`train/train_2d.py`, `train/train_3d.py`), phase D (CUDA kernels in
+`cuda/`; notebooks 10-12 degrade to skip messages on CPU machines).
+Caveat: phase D was authored on a CPU-only machine, so its GPU-side
+asserts (parity, gradcheck, speedup) have not run yet; the first build on
+an NVIDIA machine executes them. Remaining work: that GPU validation,
+then optional phase E (profiling). Specs live in `docs/ROADMAP.md`.
 
 ## The prime rule
 

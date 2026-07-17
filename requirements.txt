@@ -12,4 +12,4 @@ plyfile
 torch
 
 # Phase D (CUDA)
-# ninja
+ninja
