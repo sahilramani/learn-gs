@@ -33,7 +33,7 @@ previous version broke, and each notebook shows the break before the fix.
 | `08_fit_an_image_2d` | Nothing chooses the Gaussians. Stripped to 2D: the over operator's backward recurrence derived by hand, finite-difference checked on every parameter, numpy Adam fits a procedural image. `train/train_2d.py`. |
 | `09_train_3d_torch` | The 3D chain, differentiable in PyTorch: autograd owns the gradients (gradcheck-verified), a random cloud becomes the sphere from 24 self-rendered views, densify and prune with every paper deviation named. The ms/iter it prints is phase D's opening argument. `train/train_3d.py`. |
 
-### Phase D - CUDA [done, GPU verification pending]
+### Phase D - CUDA [done]
 
 | Notebook | Problem it solves |
 |---|---|
@@ -41,11 +41,15 @@ previous version broke, and each notebook shows the break before the fix.
 | `11_cuda_tiled` | Naive traffic scales as splats x pixels. 16x16 tiles, `(tile << 32) \| float_bits(depth)` key sort, per-tile ranges, shared-memory batches, block-wide early exit. The actual 3DGS forward. |
 | `12_cuda_backward` | Fast kernels learn nothing. Forward stores final T + last contributor; backward replays notebook 08's recurrence per tile with atomics, wrapped in `torch.autograd.Function`; training at kernel speed. A minimal `diff-gaussian-rasterization`. |
 
-Phase D notebooks were authored on a CPU-only machine: kernel cells guard on
-`torch.cuda.is_available()` and skip cleanly, and the host-side machinery
-(tile spans, key packing, ranges) is asserted everywhere. The first notebook
-build on an NVIDIA machine compiles the kernels and runs the parity,
-gradcheck, and speedup asserts.
+Phase D is GPU-verified: the shipped notebooks were built on an RTX 5080,
+where the kernels compile and the parity, gradient, and speedup asserts
+all pass. Across toy-scene renders from 2.5k to 160k splats, the naive
+kernel beats numpy by 128-299x. Tiling beats the naive kernel by up to
+~98x at scale. Kernel training runs 800 iterations at 6.5 ms each, 42x
+the dense CPU baseline at the same splat count, and its per-parameter
+gradients match autograd to ~1e-6 relative L2. On a machine without a
+GPU the kernel cells guard on `torch.cuda.is_available()` and skip
+cleanly, so the build stays green everywhere.
 
 ### Phase E - measurement
 

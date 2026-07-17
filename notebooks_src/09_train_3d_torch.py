@@ -171,8 +171,10 @@ def render_t(means, cov3ds, colors, opacities, cam, alpha_min=ALPHA_MIN,
 # already in the repo. The batched pieces must match the package functions
 # bit for bit in float64, and a full render of the toy sphere must match
 # `gsplat_edu.render_gaussians` up to the one difference just declared:
-# tails the numpy bbox cuts and the dense evaluation keeps, each below the
-# alpha floor's neighborhood.
+# tails the numpy bbox cuts and the dense evaluation keeps. At the
+# 3-sigma cut a toy-scene splat still carries alpha near 0.009, above
+# the 1/255 floor, so the difference is small but real; that is why the
+# check bounds the max loosely and the mean tightly.
 
 # %%
 rng = np.random.default_rng(9)

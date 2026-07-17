@@ -99,8 +99,14 @@ rotation: normalize(quat)
   Tile spans come from the notebook-02 bounding radius on the dilated
   covariance. `torch.sort` stands in for cub radix sort.
 - Kernel parity tolerance against bbox-truncating references is atol
-  1e-3: the 3-sigma cut and dense evaluation keep different sub-floor
-  tails. Kernels composite over a fixed black background.
+  2e-3, set by GPU measurement. The 3-sigma cut is not sub-floor: at the
+  cut boundary a splat still carries alpha = opacity * exp(-4.5), which
+  for the toy scene's opacity 0.8 is 0.0089, above the 1/255 floor. A
+  dense-evaluating kernel composites that ring (out to the floor contour
+  at Mahalanobis 3.26); a truncating path drops it. Overlapping rings
+  measure up to ~1.5e-3 on the toy scene; 2e-3 covers that and stays
+  below one 8-bit level (3.9e-3). Kernels composite over a fixed black
+  background.
 - Backward: forward stores per-pixel final `T` and last-contributor
   count; backward walks each tile back to front with notebook 08's
   recurrence and accumulates per-splat grads (color, opacity, 2D mean,

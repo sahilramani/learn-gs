@@ -222,7 +222,7 @@ if HAS_GPU:
 
     diff = np.abs(img_k - img_np)
     print(f"kernel vs gsplat_edu.render_gaussians: max |diff| {diff.max():.5f}")
-    assert diff.max() < 1e-3, "parity with the numpy renderer failed"
+    assert diff.max() < 2e-3, "parity with the numpy renderer failed"
 
     fig, axes = plt.subplots(1, 3, figsize=(12, 4))
     for ax, (im, ttl) in zip(axes, [
@@ -237,11 +237,16 @@ else:
     print("skipped: kernel compile + parity (no CUDA device)")
 
 # %% [markdown]
-# The tolerance is 1e-3 because the two renderers differ on purpose in one
-# place notebook 09 already mapped: the numpy path truncates each splat at
-# its 3-sigma bounding box, the kernel evaluates every splat everywhere
-# and lets the alpha floor cut the tail. fp32 accumulation order supplies
-# the rest of the difference.
+# The tolerance is 2e-3, set by measurement. The two renderers differ on
+# purpose in one place notebook 09 already mapped: the numpy path
+# truncates each splat at its 3-sigma bounding box, the kernel evaluates
+# every splat everywhere and lets the alpha floor cut the tail. That cut
+# is not free. At the 3-sigma boundary a toy-scene splat still carries
+# alpha = 0.8 * exp(-4.5), about 0.009, above the 1/255 floor, so the
+# kernel composites a thin ring per splat that the reference drops. Where
+# several rings overlap, the images differ by the ~1.3e-3 printed above;
+# one 8-bit level is 3.9e-3, and the ring stays below it. fp32
+# accumulation order supplies the rest of the difference.
 #
 # ## The timing table
 

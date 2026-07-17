@@ -133,7 +133,10 @@ gen = torch.Generator().manual_seed(12)
 K_PROBE = 400
 probe = {
     "means": (torch.randn(K_PROBE, 3, generator=gen) * 0.5).requires_grad_(),
-    "log_s": torch.full((K_PROBE, 3), float(np.log(0.09))).requires_grad_(),
+    # scales must differ per axis: with isotropic scales Sigma = s^2 I no
+    # matter the quaternion, and the quat gradcheck below compares noise
+    "log_s": (float(np.log(0.09))
+              + 0.3 * torch.randn(K_PROBE, 3, generator=gen)).requires_grad_(),
     "quats": (torch.tensor([[1.0, 0, 0, 0]] * K_PROBE)
               + 0.1 * torch.randn(K_PROBE, 4, generator=gen)).requires_grad_(),
     "sh0": (0.3 * torch.randn(K_PROBE, 3, generator=gen)).requires_grad_(),
@@ -312,8 +315,11 @@ else:
 # ## Gradcheck against notebook 09
 #
 # Same tiny scene, same fp32 inputs, two implementations: the dense
-# autograd forward and the kernel path. Forward images must agree to the
-# familiar 1e-3 (bounding-box tails); each parameter group's gradient
+# autograd forward and the kernel path. Forward images must agree to
+# 1e-3, and here the bar is easy: at the probe's sigmoid(-1) opacity
+# every 3-sigma tail sits below the 1/255 floor, so the truncation ring
+# notebooks 10 and 11 measured is empty and the two forwards agree to
+# fp32 noise. Each parameter group's gradient
 # must agree in relative L2. The comparison runs with the alpha floor on,
 # because both implementations gate it identically. Atomics make the
 # kernel's sums nondeterministic in order, so the tolerance is 1e-2, not
@@ -377,8 +383,11 @@ else:
 #
 # Notebook 09's loop, verbatim in structure: same init, same per-group
 # Adam, same simplified densify-and-prune, same self-supervised sphere.
-# Only the renderer call changed. The baseline number to beat is the
-# dense CPU ms-per-iteration measured at the top of this notebook.
+# Only the renderer call changed. The baseline to beat is the dense CPU
+# ms-per-iteration. The probe at the top priced it for K=400, but
+# densification grows the model about 4x during the run, so the honest
+# comparison re-prices the dense step on the trained parameters: both
+# sides then pay for the same model.
 
 # %%
 if HAS_GPU:
@@ -533,10 +542,33 @@ if HAS_GPU:
     torch.cuda.synchronize()
     wall = time.perf_counter() - t_start
     ms_iter = wall / ITERS * 1e3
-    speedup = t_dense_cpu * 1e3 / ms_iter
+    K_final = len(params["means"])
     print(f"{ITERS} iters in {wall:.1f} s -> {ms_iter:.1f} ms/iter "
-          f"(dense CPU baseline {t_dense_cpu * 1e3:.0f} ms/iter, "
-          f"{speedup:.0f}x)")
+          f"(K grew {K0} -> {K_final})")
+
+    # dense baseline at the splat count training actually reached
+    final_cpu = {k: v.detach().cpu().clone().requires_grad_()
+                 for k, v in params.items()}
+
+    def dense_step_final():
+        img = render_dense(final_cpu["means"],
+                           cov3d_t(final_cpu["log_s"], final_cpu["quats"]),
+                           torch.clamp(C0 * final_cpu["sh0"] + 0.5, min=0.0),
+                           torch.sigmoid(final_cpu["o_logit"]), cam0)
+        loss = (img - target_probe).abs().mean()
+        loss.backward()
+        for p in final_cpu.values():
+            p.grad = None
+
+    dense_step_final()
+    t0 = time.perf_counter()
+    for _ in range(3):
+        dense_step_final()
+    t_dense_matched = (time.perf_counter() - t0) / 3
+    speedup = t_dense_matched * 1e3 / ms_iter
+    print(f"dense CPU at K={K_final}: {t_dense_matched * 1e3:.0f} ms/iter; "
+          f"kernel training speedup {speedup:.0f}x "
+          f"(K=400 probe baseline was {t_dense_cpu * 1e3:.0f} ms/iter)")
     assert speedup >= 10, "kernel training is not 10x the dense baseline"
 
     with torch.no_grad():

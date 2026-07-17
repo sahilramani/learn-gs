@@ -292,7 +292,7 @@ if HAS_GPU:
                                  ALPHA_MIN, ALPHA_MAX, T_STOP)
     diff = (img_t - img_n).abs().max().item()
     print(f"tiled vs naive: max |diff| {diff:.5f}")
-    assert diff < 1e-3, "tiled kernel disagrees with naive beyond tails"
+    assert diff < 2e-3, "tiled kernel disagrees with naive beyond tails"
 
     fig, axes = plt.subplots(1, 2, figsize=(9, 4.2))
     axes[0].imshow(np.clip(img_t.cpu().numpy(), 0, 1))
@@ -308,7 +308,10 @@ else:
 # The tolerance story is the radius, this time in the other direction:
 # the tiled path never evaluates a splat outside its 3-sigma square, the
 # naive path evaluates everything and keeps whatever clears the alpha
-# floor. Same faint tails notebooks 09 and 10 already accounted for.
+# floor. Same above-floor ring notebook 10 measured, seen from the other
+# side and slightly wider, because the tile span clips at exactly
+# u +- r while the reference bbox rounds outward; the measured diff
+# lands near 1.5e-3 and the assert allows the same 2e-3.
 #
 # ## The speedup curve
 
