@@ -7,12 +7,13 @@ everywhere except phase D, where performance is the subject.
 
 ## Status
 
-Notebooks 01-08 shipped: phase A (renderer, package `gsplat_edu`,
+Notebooks 01-09 shipped: phase A (renderer, package `gsplat_edu`,
 `scripts/render_toy.py`), phase B (spherical harmonics, trained-ply
 loading; notebook 07 degrades to a synthetic stand-in when `data/` has no
-real scene), and the phase C opener (hand-derived 2D backward,
-`train/train_2d.py`). Next task: notebook 09. Specs and order live in
-`docs/ROADMAP.md`.
+real scene), phase C (hand-derived 2D backward, torch 3D training;
+`train/train_2d.py`, `train/train_3d.py`). Next task: notebook 10 (phase
+D, needs an NVIDIA GPU; the notebook must degrade cleanly on CPU). Specs
+and order live in `docs/ROADMAP.md`.
 
 ## The prime rule
 

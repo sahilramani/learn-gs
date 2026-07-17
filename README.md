@@ -26,14 +26,12 @@ previous version broke, and each notebook shows the break before the fix.
 | `06_spherical_harmonics` | View-dependent color: flat RGB averages highlights away. SH basis degrees 0-3 with the ecosystem constants and signs, sheen demo, `eval_sh` promoted to the package. |
 | `07_render_a_real_scene` | A trained `.ply` is photographed reality in our exact representation. Layout pinned by a bit-exact round-trip, activations, batched conversions, auto-framed orbit on an honest CPU budget. Degrades to a synthetic stand-in when `data/` is empty. |
 
-### Phase C - training [in progress]
+### Phase C - training [done]
 
 | Notebook | Problem it solves |
 |---|---|
 | `08_fit_an_image_2d` | Nothing chooses the Gaussians. Stripped to 2D: the over operator's backward recurrence derived by hand, finite-difference checked on every parameter, numpy Adam fits a procedural image. `train/train_2d.py`. |
-
-- `09_train_3d_torch`: the forward pass rewritten in PyTorch, autograd training on a small synthetic scene. Adam, opacity reset, densify and prune.
-- `train/train_3d.py`: the notebook pipeline as a script.
+| `09_train_3d_torch` | The 3D chain, differentiable in PyTorch: autograd owns the gradients (gradcheck-verified), a random cloud becomes the sphere from 24 self-rendered views, densify and prune with every paper deviation named. The ms/iter it prints is phase D's opening argument. `train/train_3d.py`. |
 
 ### Phase D - CUDA
 

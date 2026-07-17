@@ -8,6 +8,8 @@ nbclient
 # Phase B (real scenes)
 plyfile
 
-# Phase C/D (training, CUDA)
-# torch
+# Phase C (training)
+torch
+
+# Phase D (CUDA)
 # ninja

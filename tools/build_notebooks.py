@@ -35,7 +35,7 @@ for src in sources:
 for src in sources:
     nb = jupytext.read(src)
     print("executing", src.name, flush=True)
-    NotebookClient(nb, timeout=600, kernel_name="python3",
+    NotebookClient(nb, timeout=1500, kernel_name="python3",
                    resources={"metadata": {"path": str(ROOT)}}).execute()
     out = DST / (src.stem + ".ipynb")
     nbformat.write(nb, out)

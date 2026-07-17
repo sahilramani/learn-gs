@@ -152,7 +152,7 @@ Script: `train/train_2d.py`, same pipeline, argparse for K/steps/output.
 
 Acceptance: fitted image visibly reproduces the target; report PSNR.
 
-### [ ] 09_train_3d_torch
+### [x] 09_train_3d_torch
 
 Forcing problem: hand gradients through the full 3D pipeline are a phase D
 job; autograd buys correctness now at the price of speed, and the speed bill
