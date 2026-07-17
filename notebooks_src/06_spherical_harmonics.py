@@ -431,7 +431,7 @@ print("package sh matches the notebook, bit for bit")
 #
 # The decoder for a trained ply's 48 color numbers now exists, and it was
 # the only genuinely new math the file demands. Everything else in there is
-# packaging: 59 fields per splat in a fixed order, log-scales and opacity
+# packaging: 62 fields per splat in a fixed order, log-scales and opacity
 # logits that need their activations, wxyz quaternions, and a few hundred
 # thousand splats aimed at a renderer that measures its throughput in
 # seconds. Notebook 07 opens the file, decodes all of it, and renders a

@@ -19,6 +19,31 @@ def build_cov3d(scale, R):
     return M @ M.T
 
 
+def quat_to_R_batch(q):
+    """quat_to_R over rows. q (N, 4) wxyz -> (N, 3, 3). Promoted from
+    notebook 07; loading a real scene converts every splat at once."""
+    q = np.asarray(q, float)
+    q = q / np.linalg.norm(q, axis=-1, keepdims=True)
+    w, x, y, z = q[..., 0], q[..., 1], q[..., 2], q[..., 3]
+    R = np.empty(q.shape[:-1] + (3, 3))
+    R[..., 0, 0] = 1 - 2 * (y * y + z * z)
+    R[..., 0, 1] = 2 * (x * y - w * z)
+    R[..., 0, 2] = 2 * (x * z + w * y)
+    R[..., 1, 0] = 2 * (x * y + w * z)
+    R[..., 1, 1] = 1 - 2 * (x * x + z * z)
+    R[..., 1, 2] = 2 * (y * z - w * x)
+    R[..., 2, 0] = 2 * (x * z - w * y)
+    R[..., 2, 1] = 2 * (y * z + w * x)
+    R[..., 2, 2] = 1 - 2 * (x * x + y * y)
+    return R
+
+
+def build_cov3d_batch(scales, Rs):
+    """build_cov3d over rows. scales (N, 3), Rs (N, 3, 3) -> (N, 3, 3)."""
+    M = np.asarray(Rs, float) * np.asarray(scales, float)[..., None, :]
+    return np.einsum("...ij,...kj->...ik", M, M)
+
+
 def project_cov3d(cov3d, mean_cam, cam):
     """World-frame 3x3 covariance -> screen-space 2x2, linearized at the mean.
 

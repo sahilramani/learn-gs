@@ -71,6 +71,16 @@ z_near    = 0.05    cull before the Jacobian sees a small z
 - The renderer stays color-agnostic: callers run `eval_sh` and pass RGB to
   `render_gaussians`.
 
+## Trained ply layout (notebook 07+)
+
+- One `vertex` element, 62 float32 properties, order binding: `x y z`,
+  `nx ny nz` (zeros, unused), `f_dc_0..2`, `f_rest_0..44`, `opacity`,
+  `scale_0..2`, `rot_0..3` (wxyz).
+- `f_rest` is flattened channel-major: `f_rest_j` holds channel `j // 15`,
+  band coefficient `j % 15`. Assemble `(N, 45) -> (N, 3, 15) -> transpose
+  -> (N, 15, 3)`, concat `f_dc` in front for `(N, 16, 3)`.
+- Stored values are pre-activation; see Parameter activations below.
+
 ## Parameter activations (training and ply loading)
 
 ```

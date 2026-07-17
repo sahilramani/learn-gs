@@ -6,7 +6,7 @@ nbclient
 -e .
 
 # Phase B (real scenes)
-# plyfile
+plyfile
 
 # Phase C/D (training, CUDA)
 # torch

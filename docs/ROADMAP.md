@@ -80,7 +80,7 @@ Promotion: `src/gsplat_edu/sh.py` with the constants and
 Renderer stays color-agnostic: callers compute `colors = eval_sh(...)` and
 pass RGB in, `render_gaussians` unchanged.
 
-### [ ] 07_render_a_real_scene
+### [x] 07_render_a_real_scene
 
 Forcing problem: every scene so far was hand-placed; the method exists to
 render photographed reality. A trained `.ply` is photographed reality in our

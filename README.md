@@ -19,15 +19,14 @@ previous version broke, and each notebook shows the break before the fix.
 | `04_projection_ewa` | The fix: linearize projection at the mean. Jacobian, Sigma2d = J W Sigma Wt Jt, where the approximation holds and where it visibly fails. |
 | `05_sort_and_composite` | Many splats per pixel: the over operator, global depth sort, full renderer. Points vs splats side by side. Code promoted to `src/gsplat_edu`. |
 
-### Phase B - real scenes [in progress]
+### Phase B - real scenes [done]
 
 | Notebook | Problem it solves |
 |---|---|
 | `06_spherical_harmonics` | View-dependent color: flat RGB averages highlights away. SH basis degrees 0-3 with the ecosystem constants and signs, sheen demo, `eval_sh` promoted to the package. |
+| `07_render_a_real_scene` | A trained `.ply` is photographed reality in our exact representation. Layout pinned by a bit-exact round-trip, activations, batched conversions, auto-framed orbit on an honest CPU budget. Degrades to a synthetic stand-in when `data/` is empty. |
 
-- `07_render_a_real_scene`: load a trained `.ply` from the official 3DGS release, render it with our numpy renderer. Slow, small resolution, real.
-
-### Phase C - training
+### Phase C - training [next]
 
 - `08_fit_an_image_2d`: optimize 2D Gaussians to reproduce a photo. Gradients derived and coded by hand in numpy. This is the backward pass, learned concretely.
 - `09_train_3d_torch`: the forward pass rewritten in PyTorch, autograd training on a small synthetic scene. Adam, opacity reset, densify and prune.
