@@ -244,6 +244,31 @@ STEPS_CSS = """\
 """
 
 
+# Links that leave the domain open in a new tab, matching the convention in
+# the blog's _layouts/field-project.html. Done as a pass over the finished
+# page rather than in each template, so a link added later cannot miss it,
+# and so links inside the notebook prose are covered too.
+SAME_SITE = ("https://www.sahilramani.com", "http://www.sahilramani.com",
+             "https://sahilramani.com", "http://sahilramani.com")
+
+ANCHOR = re.compile(r"<a\b[^>]*>")
+
+
+def external_tabs(page):
+    def fix(match):
+        tag = match.group(0)
+        href = re.search(r'href="([^"]*)"', tag)
+        if not href or "target=" in tag:
+            return tag
+        url = href.group(1)
+        if not url.startswith(("http://", "https://")):
+            return tag
+        if url.startswith(SAME_SITE):
+            return tag
+        return tag[:-1].rstrip() + ' target="_blank" rel="noreferrer">'
+    return ANCHOR.sub(fix, page)
+
+
 def inline(text):
     """Markdown fragment from a README table cell to HTML."""
     text = text.replace(r"\|", "|")
@@ -326,7 +351,7 @@ for src in sources:
         sys.exit("no </body> in the rendered %s" % src.stem)
 
     dst = OUT / (src.stem + ".html")
-    dst.write_text(body)
+    dst.write_text(external_tabs(body))
     print("rendered", dst.relative_to(ROOT), "(%d KB)" % (len(body) // 1024))
 
 described = curriculum()
@@ -357,11 +382,11 @@ for phase, rows in described:
                 stem=stem, colab=COLAB, repo=REPO_HTML))
     sections.append("<h2>%s</h2>\n%s" % (html.escape(phase), "\n".join(cards)))
 
-(SITE / "index.html").write_text(PAGE.format(
+(SITE / "index.html").write_text(external_tabs(PAGE.format(
     head=HEAD.format(css=HOME_CSS, extra=INDEX_CSS),
     topbar=TOPBAR.format(home=HOME, root="index.html", status="12 notebooks"),
     footer=FOOTER.format(home=HOME, repo=REPO_HTML),
-    body="\n".join(sections), repo=REPO_HTML))
+    body="\n".join(sections), repo=REPO_HTML)))
 (SITE / ".nojekyll").write_text("")
 print("wrote", (SITE / "index.html").relative_to(ROOT),
       "with %d notebooks" % len(listed))

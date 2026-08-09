@@ -43,6 +43,10 @@ THEME_CONTRACT = ["--bg", "--bg2", "--ink", "--ink2", "--line", "--line2",
                   ".eyebrow", ".chip", "footer"]
 
 HREF = re.compile(r'href="([^"]+)"')
+ANCHOR = re.compile(r"<a\b[^>]*>")
+
+SAME_SITE = ("https://www.sahilramani.com", "http://www.sahilramani.com",
+             "https://sahilramani.com", "http://sahilramani.com")
 
 problems = []
 notes = []
@@ -87,7 +91,47 @@ def check_built():
                             % page.relative_to(SITE))
 
     check_cross_links(pages, notebooks)
+    check_external_tabs(pages)
     print("checked %d pages (%d notebooks)" % (len(pages), len(notebooks)))
+
+
+def check_external_tabs(pages):
+    """Off-domain links open in a new tab; on-domain links do not.
+
+    Both directions matter. A GitHub link that navigates away loses the
+    reader's place in a notebook, and a nav link that spawns a tab is the
+    kind of thing that piles up a dozen copies of the home page.
+    """
+    offsite, onsite = 0, 0
+    for page in pages:
+        rel = page.relative_to(SITE)
+        for tag in ANCHOR.findall(page.read_text()):
+            href = re.search(r'href="([^"]*)"', tag)
+            if not href:
+                continue
+            url = href.group(1)
+            blank = 'target="_blank"' in tag
+            if url.startswith(("http://", "https://")):
+                if url.startswith(SAME_SITE):
+                    onsite += 1
+                    if blank:
+                        problems.append(
+                            "%s opens an on-domain link in a new tab: %s"
+                            % (rel, url))
+                else:
+                    offsite += 1
+                    if not blank:
+                        problems.append(
+                            "%s does not open %s in a new tab" % (rel, url))
+                    elif "noreferrer" not in tag:
+                        problems.append(
+                            "%s opens %s in a new tab without rel=noreferrer"
+                            % (rel, url))
+            elif blank:
+                problems.append("%s opens a relative link in a new tab: %s"
+                                % (rel, url))
+    print("external links: %d open in a new tab, %d on-domain stay put"
+          % (offsite, onsite))
 
 
 def check_cross_links(pages, notebooks):
