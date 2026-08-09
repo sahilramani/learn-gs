@@ -14,7 +14,9 @@ real scene), phase C (hand-derived 2D backward, torch 3D training;
 `train/train_2d.py`, `train/train_3d.py`), phase D (CUDA kernels in
 `cuda/`, GPU-verified; notebooks 10-12 degrade to skip messages on CPU
 machines). Remaining work: optional phase E (profiling). Specs live in
-`docs/ROADMAP.md`.
+`docs/ROADMAP.md`. The notebooks are also published: `tools/build_site.py`
+renders them to `site/` and a GitHub Actions workflow deploys that to
+Pages, and `tools/build_colab.py` writes the Colab editions in `colab/`.
 
 ## The prime rule
 
@@ -37,6 +39,15 @@ restructure until it does. Each notebook ends by naming the next live problem.
   `src/gsplat_edu`, and the promoting notebook keeps its inline copy plus an
   exact-equality assert against the package import (see notebook 05).
 - `python scripts/render_toy.py` is the package smoke test.
+- `colab/*.ipynb` are generated, never hand-edited. Any commit that touches
+  `notebooks_src/` must also run `python tools/build_colab.py` and include
+  the result; CI fails the build on `--check` if they drift apart. They
+  carry no outputs on purpose, so they stay a few hundred KB rather than
+  duplicating the figures already embedded in `notebooks/`.
+- Rebuilding notebooks on a machine without an NVIDIA GPU replaces the
+  phase D results in `notebooks/10..12.ipynb` with the skip path. Restore
+  them with `git checkout -- notebooks/` before committing unless the
+  rebuild happened on a GPU.
 
 ## Style, strict
 

@@ -13,3 +13,6 @@ torch
 
 # Phase D (CUDA)
 ninja
+
+# Site build (tools/build_site.py)
+nbconvert

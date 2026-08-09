@@ -1,0 +1,74 @@
+name: site
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  # The inline asserts are the test suite, so this job runs them. It executes
+  # notebooks into the runner's checkout and throws that checkout away; the
+  # committed .ipynb are never rewritten. That matters because 10-12 ship with
+  # results from an NVIDIA machine, and re-executing them here, on a CPU
+  # runner, would replace those with the skip path.
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+      - name: Colab editions match their sources
+        run: python tools/build_colab.py --check
+      - name: Package smoke test
+        run: python scripts/render_toy.py
+      - name: Execute every notebook
+        run: python tools/build_notebooks.py
+
+  # Renders the committed notebooks as they are. No execution, so the site
+  # shows the GPU figures in 10-12 that this runner cannot produce.
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: pip install nbformat nbconvert
+      - name: Render site
+        run: python tools/build_site.py --clean
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+          include-hidden-files: true
+
+  deploy:
+    needs: [test, build]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

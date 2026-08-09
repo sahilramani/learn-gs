@@ -55,6 +55,20 @@ cleanly, so the build stays green everywhere.
 
 - Profiling with nsight, occupancy, why the sort and rasterize stages dominate, what the tile design buys.
 
+## Read or run
+
+The notebooks are published as a site: **https://sahilramani.github.io/learn-gs/**.
+Every page there is the executed notebook, figures and measured numbers
+included, so nothing needs installing to read the whole curriculum.
+
+To run one without installing anything, open its Colab edition from `colab/`.
+Those are the same sources with a setup cell that clones this repo into the
+Colab VM. Colab gives each visitor a private machine, and notebooks 10-12
+request a GPU runtime, which is the cheapest way to run the CUDA phase without
+NVIDIA hardware of your own:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/sahilramani/learn-gs/blob/main/colab/01_points_and_why_they_fail.ipynb)
+
 ## Setup
 
 ```
@@ -75,7 +89,9 @@ builds on the answer.
 ```
 notebooks/      the curriculum, in order, shipped executed
 notebooks_src/  editable sources (jupytext percent); never hand-edit .ipynb
-tools/          build_notebooks.py executes sources and writes notebooks/
+colab/          generated Colab editions, no outputs; build_colab.py writes them
+tools/          build_notebooks.py executes sources and writes notebooks/;
+                build_colab.py writes colab/; build_site.py renders site/
 src/            gsplat_edu: code promoted from notebooks once it stabilizes
 scripts/        runnable demos (render_toy.py renders the Phase A test scene)
 train/          training scripts (Phase C)
