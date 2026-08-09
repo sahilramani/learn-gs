@@ -106,8 +106,11 @@ import pathlib
 import subprocess
 import sys
 
-REPO = "{repo_url}"
-BRANCH = "{branch}"
+# The environment lookups exist so CI can point this at the branch under
+# test and prove the setup still works before it reaches anyone. On Colab
+# neither is set and the defaults are what runs.
+REPO = os.environ.get("LEARN_GS_REPO", "{repo_url}")
+BRANCH = os.environ.get("LEARN_GS_REF", "{branch}")
 
 base = pathlib.Path("/content") if pathlib.Path("/content").is_dir() else pathlib.Path.cwd()
 root = base / "learn-gs"

@@ -38,6 +38,11 @@ jobs:
         run: python tools/build_colab.py --check
       - name: Render site
         run: python tools/build_site.py --clean
+      # Cross-links, referenced files, and the theme contract against the
+      # stylesheet on sahilramani.com, which lives in another repository and
+      # can drop a class without anything here failing to build.
+      - name: Check the built site
+        run: python tools/check_site.py
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
@@ -54,3 +59,22 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+
+  # A deploy can report success while serving something else. This asks the
+  # live URL whether it is actually serving the pages this commit built.
+  verify:
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: pip install nbformat nbconvert
+      - name: Rebuild for comparison
+        run: python tools/build_site.py --clean
+      - name: Check the deployed site
+        run: |
+          python tools/check_site.py --live https://www.sahilramani.com/learn-gs/

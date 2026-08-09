@@ -1,0 +1,74 @@
+name: colab
+
+# Proves the Colab editions still work from a clean machine.
+#
+# Nothing else covers this. tools/build_notebooks.py executes from a checkout
+# that already exists with the package installed, which is the one situation a
+# Colab reader is never in. They get a bare VM, one .ipynb, and a setup cell
+# that has to clone this repo and put the package on the path by itself.
+#
+# The runner is that bare VM. The setup cell does a real clone over the
+# network, pointed by LEARN_GS_REF at the branch under test rather than at
+# whatever main happens to be, so a change is proven before it lands.
+#
+# The weekly run exists because the other half of this can break with no
+# commit at all: Colab moves its preinstalled versions, and PyPI moves
+# plyfile and ninja.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'colab/**'
+      - 'notebooks_src/**'
+      - 'src/**'
+      - 'pyproject.toml'
+      - 'tools/build_colab.py'
+      - 'tools/check_colab.py'
+      - '.github/workflows/colab.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'colab/**'
+      - 'notebooks_src/**'
+      - 'src/**'
+      - 'pyproject.toml'
+      - 'tools/build_colab.py'
+      - 'tools/check_colab.py'
+      - '.github/workflows/colab.yml'
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: colab-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clean-machine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # The setup cell clones this ref. On a pull request that is the branch
+      # the change lives on, so the clone contains the change being tested.
+      LEARN_GS_REF: ${{ github.head_ref || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      # Only what a bare Colab kernel already has. The package, plyfile, and
+      # ninja are deliberately absent: installing them is the setup cell's
+      # job, and this fails if it stops doing it.
+      - name: Install a bare kernel
+        run: pip install nbformat nbclient ipykernel numpy matplotlib
+      - name: Editions match their sources
+        run: |
+          pip install jupytext
+          python tools/build_colab.py --check
+      - name: Run the editions from a clean machine
+        run: python tools/check_colab.py

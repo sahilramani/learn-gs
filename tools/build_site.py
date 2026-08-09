@@ -208,6 +208,41 @@ NBNAV = """\
 </div>
 """
 
+# The curriculum is an order, not a menu, so every notebook page carries the
+# two steps either side of it. The end of a notebook is where the reader
+# decides what to do next, so this repeats after the content.
+STEPS = """\
+<div class="nbsteps">
+<div class="nbstep">{prev}</div>
+<div class="nbstep next">{next}</div>
+</div>
+"""
+
+STEP_LINK = """\
+<a href="{stem}.html"><span class="dir">{dir}</span>
+<span class="name">{name}</span></a>\
+"""
+
+STEP_END = """\
+<a href="../index.html"><span class="dir">{dir}</span>
+<span class="name">{name}</span></a>\
+"""
+
+STEPS_CSS = """\
+.nbsteps{max-width:1080px;margin:0 auto;padding:8px 24px 56px;display:grid;
+  grid-template-columns:1fr 1fr;gap:12px}
+.nbstep a{display:block;height:100%;border:1px solid var(--line2);
+  background:var(--bg2);padding:16px 18px;transition:border-color .14s}
+.nbstep a:hover{border-color:var(--g)}
+.nbstep.next{text-align:right}
+.nbstep .dir{display:block;font-family:var(--mono);font-size:10px;
+  letter-spacing:0.12em;text-transform:uppercase;color:var(--g);
+  margin-bottom:6px}
+.nbstep .name{font-size:15px;color:var(--ink)}
+@media(max-width:640px){.nbsteps{grid-template-columns:1fr}
+  .nbstep.next{text-align:left}}
+"""
+
 
 def inline(text):
     """Markdown fragment from a README table cell to HTML."""
@@ -249,25 +284,43 @@ exporter.exclude_output_prompt = True
 nb_topbar = TOPBAR.format(home=HOME, root="../index.html", status="notebook")
 nb_footer = FOOTER.format(home=HOME, repo=REPO_HTML)
 
+order = [p.stem for p in sources]
+
+
+def step(stem, delta):
+    """The prev or next card for one notebook, or the index at either end."""
+    i = order.index(stem) + delta
+    label = "previous" if delta < 0 else "next"
+    if 0 <= i < len(order):
+        neighbour = order[i]
+        num, name = neighbour.split("_", 1)
+        return STEP_LINK.format(stem=neighbour, dir=label,
+                                name="%s. %s" % (num, name.replace("_", " ")))
+    end = "start of the curriculum" if delta < 0 else "end of the curriculum"
+    return STEP_END.format(dir=label, name=end)
+
+
 for src in sources:
     nb = nbformat.read(src, as_version=4)
     # Without a name in resources every page ends up titled "Notebook".
     body, _ = exporter.from_notebook_node(
         nb, resources={"metadata": {"name": src.stem}})
 
-    head = HEAD.format(css=HOME_CSS, extra=NB_CSS)
+    head = HEAD.format(css=HOME_CSS, extra=NB_CSS + STEPS_CSS)
     body, hit = re.subn(r"</head>", lambda m: head + "\n</head>",
                         body, count=1)
     if not hit:
         sys.exit("no </head> in the rendered %s" % src.stem)
 
-    nav = nb_topbar + NBNAV.format(colab=COLAB, stem=src.stem, repo=REPO_HTML)
+    steps = STEPS.format(prev=step(src.stem, -1), next=step(src.stem, 1))
+    nav = (nb_topbar + NBNAV.format(colab=COLAB, stem=src.stem, repo=REPO_HTML)
+           + steps)
     body, hit = re.subn(r"<body[^>]*>", lambda m: m.group(0) + "\n" + nav,
                         body, count=1)
     if not hit:
         sys.exit("no <body> in the rendered %s" % src.stem)
 
-    body, hit = re.subn(r"</body>", lambda m: nb_footer + "</body>",
+    body, hit = re.subn(r"</body>", lambda m: steps + nb_footer + "</body>",
                         body, count=1)
     if not hit:
         sys.exit("no </body> in the rendered %s" % src.stem)
