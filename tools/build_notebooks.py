@@ -11,6 +11,7 @@ build, so the inline asserts are the test suite.
 
 Also enforces the project style rule that sources are pure ASCII.
 """
+import os
 import sys
 import pathlib
 import jupytext
@@ -20,6 +21,12 @@ from nbclient import NotebookClient
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SRC = ROOT / "notebooks_src"
 DST = ROOT / "notebooks"
+
+# Per-cell ceiling. The default suits a developer machine, where the slowest
+# notebook runs in minutes. Shared CI runners are far slower at the dense
+# float64 training in 08 and 09, so CI raises this rather than reading a
+# slow runner as a broken notebook.
+TIMEOUT = int(os.environ.get("NB_TIMEOUT", "1500"))
 
 pattern = sys.argv[1] if len(sys.argv) > 1 else ""
 sources = sorted(p for p in SRC.glob("*.py") if pattern in p.name)
@@ -35,7 +42,7 @@ for src in sources:
 for src in sources:
     nb = jupytext.read(src)
     print("executing", src.name, flush=True)
-    NotebookClient(nb, timeout=1500, kernel_name="python3",
+    NotebookClient(nb, timeout=TIMEOUT, kernel_name="python3",
                    resources={"metadata": {"path": str(ROOT)}}).execute()
     out = DST / (src.stem + ".ipynb")
     nbformat.write(nb, out)

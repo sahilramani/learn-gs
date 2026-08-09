@@ -1,0 +1,66 @@
+name: notebooks
+
+# The inline asserts are the test suite, so this executes every notebook and
+# throws the result away. The committed .ipynb are never rewritten here: 10-12
+# ship with results from an NVIDIA machine, and this runner has no GPU, so
+# re-executing them produces the skip path.
+#
+# It is slow. Notebook 09 alone trains 800 iterations of dense float64 torch on
+# a shared two-core runner, which is why NB_TIMEOUT is generous and why this
+# only runs when something it actually covers changes.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'notebooks_src/**'
+      - 'src/**'
+      - 'cuda/**'
+      - 'train/**'
+      - 'scripts/**'
+      - 'tools/build_notebooks.py'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - '.github/workflows/notebooks.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'notebooks_src/**'
+      - 'src/**'
+      - 'cuda/**'
+      - 'train/**'
+      - 'scripts/**'
+      - 'tools/build_notebooks.py'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - '.github/workflows/notebooks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notebooks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      NB_TIMEOUT: '5400'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+      - name: Package smoke test
+        run: python scripts/render_toy.py
+      - name: Execute every notebook
+        run: python tools/build_notebooks.py
