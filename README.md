@@ -57,7 +57,7 @@ cleanly, so the build stays green everywhere.
 
 ## Read or run
 
-The notebooks are published as a site: **https://sahilramani.github.io/learn-gs/**.
+The notebooks are published as a site: **https://www.sahilramani.com/learn-gs/**.
 Every page there is the executed notebook, figures and measured numbers
 included, so nothing needs installing to read the whole curriculum.
 
