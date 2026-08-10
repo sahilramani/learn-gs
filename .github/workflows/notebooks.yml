@@ -5,9 +5,20 @@ name: notebooks
 # ship with results from an NVIDIA machine, and this runner has no GPU, so
 # re-executing them produces the skip path.
 #
-# It is slow. Notebook 09 alone trains 800 iterations of dense float64 torch on
-# a shared two-core runner, which is why NB_TIMEOUT is generous and why this
-# only runs when something it actually covers changes.
+# It is slow, and almost all of that is one notebook. Measured on a free
+# runner (run 31293975486, 2026-08-09): 01-07 together take 36 s, 08 takes
+# 2m36s, 10-12 take 14 s between them because they skip without a GPU, and 09
+# takes 57m23s on its own for 61 minutes total. Its 800 iterations of dense
+# float64 torch on two shared cores are 94 percent of this workflow.
+#
+# That is why NB_TIMEOUT is raised here. The default of 1500 s in
+# tools/build_notebooks.py suits a developer machine and this blows straight
+# through it. The value below leaves roughly twice the measured cost, so a
+# slow runner reads as slow rather than as a broken notebook, and
+# timeout-minutes sits above it so the per-cell ceiling is what fires first
+# and says which cell it was.
+#
+# It is also why this only runs when something it covers changes.
 
 on:
   push:
@@ -46,9 +57,9 @@ concurrency:
 jobs:
   execute:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 150
     env:
-      NB_TIMEOUT: '5400'
+      NB_TIMEOUT: '7200'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
