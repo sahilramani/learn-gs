@@ -156,35 +156,35 @@ plt.tight_layout(); plt.show()
 #
 # Loss first. With `P = H*W*3` scalar outputs,
 #
-# ```
-# L = (1/P) sum_p (C_p - target_p)^2      ->      dL/dC = (2/P) (C - target)
-# ```
+# $$L = \frac{1}{P} \sum_p (C_p - \text{target}_p)^2
+# \qquad\Longrightarrow\qquad
+# \frac{\partial L}{\partial C} = \frac{2}{P} (C - \text{target})$$
 #
-# Now through the over operator. Per pixel, with `T_i = prod_{j<i} (1 - a_j)`:
+# Now through the over operator. Per pixel, with
+# $T_i = \prod_{j<i} (1 - a_j)$:
 #
-# ```
-# C = sum_i c_i a_i T_i
-# ```
+# $$C = \sum_i c_i a_i T_i$$
 #
-# Color is the easy half: `c_i` appears once, weighted by its own
-# contribution, so `dL/dc_i = sum_pixels (dL/dC) a_i T_i`.
+# Color is the easy half: $c_i$ appears once, weighted by its own
+# contribution, so
+# $\partial L / \partial c_i = \sum_\text{pixels} (\partial L/\partial C)
+# \, a_i T_i$.
 #
-# Alpha is the interesting half. `a_i` appears directly in its own term and
-# inside `T_j` of every splat behind it, through the factor `(1 - a_i)`:
+# Alpha is the interesting half. $a_i$ appears directly in its own term and
+# inside $T_j$ of every splat behind it, through the factor $(1 - a_i)$:
 #
-# ```
-# dC/da_i = c_i T_i - (1 / (1 - a_i)) * sum_{j>i} c_j a_j T_j
-# ```
+# $$\frac{\partial C}{\partial a_i}
+# = c_i T_i - \frac{1}{1 - a_i} \sum_{j>i} c_j a_j T_j$$
 #
-# Call that trailing sum `S_i`, the color blended behind splat `i`. Walking
-# splats back to front maintains `S_i` as a running accumulation for free.
+# Call that trailing sum $S_i$, the color blended behind splat $i$. Walking
+# splats back to front maintains $S_i$ as a running accumulation for free.
 #
 # ## Exercise
 #
-# The formula also wants every `T_i`, and the forward pass deliberately kept
-# only the final transmittance `T_K = prod_j (1 - a_j)`. Storing all K maps
-# is exactly what a CUDA kernel cannot afford. Recover each `T_i` from
-# `T_K` and the alphas alone, walking back to front, and state what makes
+# The formula also wants every $T_i$, and the forward pass deliberately kept
+# only the final transmittance $T_K = \prod_j (1 - a_j)$. Storing all K maps
+# is exactly what a CUDA kernel cannot afford. Recover each $T_i$ from
+# $T_K$ and the alphas alone, walking back to front, and state what makes
 # the recovery numerically safe. Work it before scrolling.
 
 # %% [markdown]
@@ -192,12 +192,11 @@ plt.tight_layout(); plt.show()
 #
 # Divide out one factor per step:
 #
-# ```
-# T_i = T_{i+1 as running product} / (1 - a_i)
-# ```
+# $$T_i = \frac{T_\text{run}}{1 - a_i}$$
 #
-# concretely: `T_run` starts at `T_K`; at splat `i` (last to first),
-# `T_i = T_run / (1 - a_i)`, and `T_run` becomes `T_i` for the next step.
+# concretely: $T_\text{run}$ starts at $T_K$; at splat $i$ (last to first),
+# $T_i = T_\text{run} / (1 - a_i)$, and $T_\text{run}$ becomes $T_i$ for the
+# next step.
 # Safe because notebook 05 capped alpha at 0.99: the divisor never drops
 # below 0.01. That cap was installed two notebooks ago for this division;
 # the official backward (`render_backward` in `diff-gaussian-rasterization`)
@@ -206,35 +205,44 @@ plt.tight_layout(); plt.show()
 # %% [markdown]
 # ## Backward, the rest of the chain
 #
-# From `dL/da_i` down to the nine raw numbers, outermost to innermost. The
-# kernel is `a = o * g`, `g = exp(power)`:
+# From $\partial L / \partial a_i$ down to the nine raw numbers, outermost to
+# innermost. The kernel is $a = o g$, $g = \exp(\text{power})$:
 #
-# ```
-# dL/do     = sum_pixels dL/da * g,   then  do/dlogit = o (1 - o)
-# dL/dpower = dL/da * o * g = dL/da * a
-# ```
+# $$\frac{\partial L}{\partial o}
+# = \sum_\text{pixels} \frac{\partial L}{\partial a} g,
+# \qquad \frac{\partial o}{\partial \text{logit}} = o (1 - o)$$
 #
-# `power = -0.5 d^T A d` with `d = pixel - mu` and `A` the conic:
+# $$\frac{\partial L}{\partial \text{power}}
+# = \frac{\partial L}{\partial a} o g
+# = \frac{\partial L}{\partial a} a$$
 #
-# ```
-# dpower/dmu = A d          (the minus from d(-d)/dmu cancels the -0.5's 2)
-# dpower/dA  = -0.5 d d^T
-# ```
+# $\text{power} = -\tfrac{1}{2} d^{T} A d$ with $d = \text{pixel} - \mu$
+# and $A$ the conic:
 #
-# `A = Sigma^-1` is the one genuinely new piece of matrix calculus. From
-# `A Sigma = I`: `dA = -A dSigma A`, so gradients transpose-chain as
+# $$\frac{\partial \text{power}}{\partial \mu} = A d
+# \qquad\text{(the minus from } d(-d)/d\mu
+# \text{ cancels the } -\tfrac{1}{2}\text{'s 2)}$$
 #
-# ```
-# dL/dSigma = -A (dL/dA) A          (A symmetric)
-# ```
+# $$\frac{\partial \text{power}}{\partial A}
+# = -\tfrac{1}{2} d d^{T}$$
 #
-# and `Sigma = R diag(s^2) R^T` closes the chain. With `r_m` the m-th
-# column of `R` and `R' = dR/dtheta`:
+# $A = \Sigma^{-1}$ is the one genuinely new piece of matrix calculus. From
+# $A \Sigma = I$: $dA = -A \, d\Sigma \, A$, so gradients transpose-chain as
 #
-# ```
-# dL/ds_m    = 2 s_m r_m^T (dL/dSigma) r_m,   ds/dlog_s = s
-# dL/dtheta  = dL/dSigma : (R' D R^T + R D R'^T),   D = diag(s^2)
-# ```
+# $$\frac{\partial L}{\partial \Sigma}
+# = -A \left(\frac{\partial L}{\partial A}\right) A
+# \qquad (A \text{ symmetric})$$
+#
+# and $\Sigma = R \, \mathrm{diag}(s^2) \, R^{T}$ closes the chain. With
+# $r_m$ the m-th column of $R$ and $R' = dR/d\theta$:
+#
+# $$\frac{\partial L}{\partial s_m}
+# = 2 s_m r_m^{T} \left(\frac{\partial L}{\partial \Sigma}\right) r_m,
+# \qquad \frac{ds}{d\log s} = s$$
+#
+# $$\frac{\partial L}{\partial \theta}
+# = \frac{\partial L}{\partial \Sigma} :
+# (R' D R^{T} + R D R'^{T}), \qquad D = \mathrm{diag}(s^2)$$
 #
 # Both clamps gate everything: a pixel where alpha was floored to zero or
 # capped at 0.99 contributes no kernel gradient there (the computed

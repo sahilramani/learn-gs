@@ -39,6 +39,11 @@ restructure until it does. Each notebook ends by naming the next live problem.
   `src/gsplat_edu`, and the promoting notebook keeps its inline copy plus an
   exact-equality assert against the package import (see notebook 05).
 - `python scripts/render_toy.py` is the package smoke test.
+- Markdown-only edits go through `python tools/update_markdown.py
+  [pattern]`, which carries the new prose into the built `.ipynb` without
+  executing. It refuses unless every code cell is byte-identical, so it
+  cannot pair new code with stale outputs. This is the only way to fix
+  prose in 10-12 on a machine with no GPU.
 - `colab/*.ipynb` are generated, never hand-edited. Any commit that touches
   `notebooks_src/` must also run `python tools/build_colab.py` and include
   the result; CI fails the build on `--check` if they drift apart. They
@@ -53,6 +58,11 @@ restructure until it does. Each notebook ends by naming the next live problem.
 
 - ASCII only in sources and code: straight quotes, `->` not arrows, hyphens
   not em dashes. The build tool rejects non-ASCII.
+- Math in markdown cells is LaTeX, `$inline$` and `$$display$$`, which is
+  still ASCII. MathJax ships in the rendered pages, on GitHub, and in
+  Colab, so `$\Sigma$` reads as a symbol everywhere. Backticks stay for
+  what is actually code: identifiers, paths, pseudocode, data layouts,
+  and the CUDA listings. Do not put an equation in a code fence.
 - Prose: short declarative sentences. Derive, state, move on. Markdown cells
   stay short. Banned: "Let's", "It's worth noting", rhetorical
   question-then-answer, "not X but Y" reveal constructions, bold-led bullet

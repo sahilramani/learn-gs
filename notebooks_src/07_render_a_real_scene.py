@@ -206,15 +206,16 @@ print("batched conversions match the scalar versions")
 # `nrm`; the axis-angle rotation carrying `e_z = (0, 0, 1)` onto `nrm` does,
 # with quaternion
 #
-# ```
-# axis  = cross(e_z, nrm) / |cross(e_z, nrm)|
-# angle = arccos(nrm_z)
-# q     = (cos(angle/2), sin(angle/2) * axis)
-# ```
+# $$\text{axis} = \frac{e_z \times n}{\lVert e_z \times n \rVert},
+# \qquad \theta = \arccos(n_z)$$
+#
+# $$q = \left(\cos\tfrac{\theta}{2},\;
+# \sin\tfrac{\theta}{2} \, \text{axis}\right)$$
 #
 # The two tangent columns land wherever the axis-angle map puts them, and
 # for a disk that freedom is free: both tangential scales are equal, so
-# `Sigma = R diag(s^2) R^T` is invariant to spinning the tangent frame. The
+# $\Sigma = R \, \mathrm{diag}(s^2) \, R^{T}$ is invariant to spinning the
+# tangent frame. The
 # assert below closes the loop: quaternions and scales through the batched
 # loader path must reproduce the covariances notebook 05 built from an
 # explicit basis.

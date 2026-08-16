@@ -185,9 +185,21 @@ body{background:var(--bg);color:var(--ink);font-family:var(--sans)}
 .jp-RenderedHTMLCommon h1,.jp-RenderedHTMLCommon h2,
 .jp-RenderedHTMLCommon h3,.jp-RenderedHTMLCommon h4{
   font-family:var(--sans);letter-spacing:-0.02em;color:var(--ink)}
-.jp-RenderedHTMLCommon code{font-family:var(--mono);background:var(--bg2);
-  border:1px solid var(--line2);border-radius:2px;padding:1px 5px}
+/* Inline code only. Without the :not(pre), a fenced block's inner <code>
+   picks up this border and padding, and since it is an inline element it
+   draws one box per wrapped line and shifts the first line right. */
+.jp-RenderedHTMLCommon :not(pre) > code{font-family:var(--mono);
+  background:var(--bg2);border:1px solid var(--line2);border-radius:2px;
+  padding:1px 5px}
+.jp-RenderedHTMLCommon pre{font-family:var(--mono);background:#0a0a0c;
+  border:1px solid var(--line2);border-radius:6px;padding:16px 18px;
+  margin:24px 0;overflow-x:auto;font-size:13.5px;line-height:1.7;
+  color:var(--ink)}
+.jp-RenderedHTMLCommon pre code{font-family:inherit;font-size:inherit;
+  background:none;border:0;padding:0;color:inherit}
 .jp-RenderedHTMLCommon li::marker{color:var(--g)}
+.jp-RenderedHTMLCommon .MJXc-display{margin:22px 0;overflow-x:auto;
+  overflow-y:hidden}
 .jp-InputArea-editor{border:1px solid var(--line2)!important;border-radius:6px;
   background:var(--bg2)!important}
 .jp-OutputArea-output{background:transparent!important;color:var(--ink)}
@@ -252,6 +264,25 @@ SAME_SITE = ("https://www.sahilramani.com", "http://www.sahilramani.com",
              "https://sahilramani.com", "http://sahilramani.com")
 
 ANCHOR = re.compile(r"<a\b[^>]*>")
+
+
+# nbconvert's template configures MathJax with automatic linebreaking, which
+# wraps every expression in a full-width table cell so long equations can
+# break. That is right for display math and wrong for inline math: an inline
+# $z$ takes a line of its own and splits the sentence around it. MathJax
+# marks those cells display:table-cell !important, so CSS cannot win; the
+# honest fix is the setting itself. Equations here are short enough that
+# losing automatic breaking costs nothing, and .MJXc-display scrolls instead.
+LINEBREAKS = re.compile(r"(CommonHTML:\s*\{\s*linebreaks:\s*\{\s*automatic:\s*)"
+                        r"true")
+
+
+def no_math_linebreaks(page):
+    page, hit = LINEBREAKS.subn(r"\1false", page, count=1)
+    if not hit:
+        sys.exit("could not find MathJax's linebreak setting; nbconvert's "
+                 "template changed and inline math will break across lines")
+    return page
 
 
 def external_tabs(page):
@@ -351,7 +382,7 @@ for src in sources:
         sys.exit("no </body> in the rendered %s" % src.stem)
 
     dst = OUT / (src.stem + ".html")
-    dst.write_text(external_tabs(body))
+    dst.write_text(external_tabs(no_math_linebreaks(body)))
     print("rendered", dst.relative_to(ROOT), "(%d KB)" % (len(body) // 1024))
 
 described = curriculum()

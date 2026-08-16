@@ -178,12 +178,18 @@ print(f"dense torch forward+backward, CPU, K={K_PROBE} at {SIZE} px: "
 # The backward kernel is the same tile walk run in reverse: shared-memory
 # batches from the back of the list, and per splat
 #
-# ```
-# T = T / (1 - alpha)                        # recover T_i  (notebook 08)
-# dL/dc_i     = dL/dC * alpha * T
-# dL/dalpha_i = dL/dC . (c_i * T - S / (1 - alpha))
-# S          += c_i * alpha * T              # suffix behind the next splat
-# ```
+# $$T \leftarrow \frac{T}{1 - \alpha}
+# \qquad\text{recover } T_i \text{ (notebook 08)}$$
+#
+# $$\frac{\partial L}{\partial c_i}
+# = \frac{\partial L}{\partial C} \, \alpha \, T$$
+#
+# $$\frac{\partial L}{\partial \alpha_i}
+# = \frac{\partial L}{\partial C} \cdot
+# \left(c_i T - \frac{S}{1 - \alpha}\right)$$
+#
+# $$S \mathrel{+}= c_i \alpha T
+# \qquad\text{suffix behind the next splat}$$
 #
 # then through the kernel to opacity, 2D mean, and conic, with the two
 # gates notebook 08 established: a splat clamped at 0.99 or cut by the

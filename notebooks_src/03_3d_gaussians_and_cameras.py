@@ -12,18 +12,20 @@
 # Notebook 02 gave us a screen-space ellipse. But nobody authors screen-space
 # ellipses; the scene lives in 3D. Same construction, one dimension up:
 #
-# ```
-# G(x) = exp(-0.5 (x - mu)^T Sigma^-1 (x - mu)),   x, mu in R^3
-# Sigma = R S S^T R^T,   S = diag(sx, sy, sz)
-# ```
+# $$G(x) = \exp\!\left(-\tfrac{1}{2}
+# (x - \mu)^{T} \Sigma^{-1} (x - \mu)\right),
+# \qquad x, \mu \in \mathbb{R}^3$$
 #
-# A fuzzy ellipsoid: position `mu`, three semi-axis scales, one rotation.
+# $$\Sigma = R S S^{T} R^{T}, \qquad S = \mathrm{diag}(s_x, s_y, s_z)$$
+#
+# A fuzzy ellipsoid: position $\mu$, three semi-axis scales, one rotation.
 # The scene is a bag of these. The renderer's job is to turn each into a
 # notebook-02 ellipse and blend.
 #
 # ## Storing the rotation
 #
-# Notebook 02 established that Sigma must be built from a rotation and scales,
+# Notebook 02 established that $\Sigma$ must be built from a rotation and
+# scales,
 # never optimized entrywise. That makes the rotation a stored, optimized
 # quantity, and its representation matters:
 #
@@ -32,7 +34,8 @@
 # are 3 numbers but have coordinate singularities (gimbal lock) where gradients
 # degenerate. A quaternion is 4 numbers whose only constraint is unit length,
 # and normalization projects any 4-vector back onto a valid rotation. So the
-# update rule is: take a gradient step in R^4, normalize. That is why 3DGS
+# update rule is: take a gradient step in $\mathbb{R}^4$, normalize. That is
+# why 3DGS
 # stores `(w, x, y, z)` per splat, and we adopt the same, w first.
 
 # %%

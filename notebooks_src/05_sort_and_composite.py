@@ -17,24 +17,18 @@
 #
 # Treat each splat's value at a pixel as an opacity:
 #
-# ```
-# alpha_i = o_i * G_i(pixel)
-# ```
+# $$\alpha_i = o_i \, G_i(\text{pixel})$$
 #
-# Walk the splats covering the pixel from near to far. Track transmittance `T`,
-# the fraction of the pixel's light budget still unclaimed. Start at `T = 1`.
-# Splat `i` claims `alpha_i` of what remains:
+# Walk the splats covering the pixel from near to far. Track transmittance
+# $T$, the fraction of the pixel's light budget still unclaimed. Start at
+# $T = 1$. Splat $i$ claims $\alpha_i$ of what remains:
 #
-# ```
-# C += c_i * alpha_i * T
-# T *= (1 - alpha_i)
-# ```
+# $$C \mathrel{+}= c_i \alpha_i T, \qquad T \mathrel{*}= (1 - \alpha_i)$$
 #
 # Unrolled, that is
 #
-# ```
-# C = sum_i c_i alpha_i prod_{j<i} (1 - alpha_j)  +  T_final * background
-# ```
+# $$C = \sum_i c_i \alpha_i \prod_{j<i} (1 - \alpha_j)
+# \; + \; T_\text{final} \cdot \text{background}$$
 #
 # This is alpha compositing's "over" operator, the same rule Porter and Duff
 # wrote down in 1984, and the entire volume-rendering step of 3DGS.
@@ -42,18 +36,19 @@
 # Two clamps ride along, both from notebook 02's world of 8-bit budgets plus
 # one new concern:
 #
-# ```
-# alpha < 1/255  ->  skip          (cannot change the pixel)
-# alpha = min(alpha, 0.99)         (keep 1 - alpha away from zero)
-# ```
+# $$\alpha < \tfrac{1}{255} \rightarrow \text{skip}
+# \quad\text{(cannot change the pixel)}$$
 #
-# The 0.99 cap matters later: training divides by `(1 - alpha)` in the
+# $$\alpha = \min(\alpha, 0.99)
+# \quad\text{(keep } 1 - \alpha \text{ away from zero)}$$
+#
+# The 0.99 cap matters later: training divides by $(1 - \alpha)$ in the
 # backward pass, and a splat that reaches exact opacity would zero `T` and
 # erase every gradient behind it. Cheap insurance, installed now.
 #
 # ## The order
 #
-# The product over `j < i` only means something if "before" is defined per
+# The product over $j < i$ only means something if "before" is defined per
 # pixel. Exact per-pixel depth ordering is expensive, so 3DGS approximates:
 # sort splats once per frame by the camera-space depth of their means, and use
 # that single global order for every pixel. The approximation is wrong whenever

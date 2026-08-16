@@ -18,47 +18,42 @@
 #
 # ## The one rule affine maps obey
 #
-# For `y = A x + b` applied to samples with covariance `Sigma`:
+# For $y = A x + b$ applied to samples with covariance $\Sigma$:
 #
-# ```
-# Cov[y] = E[(A(x - mu))(A(x - mu))^T] = A Sigma A^T
-# ```
+# $$\mathrm{Cov}[y] = \mathbb{E}\!\left[(A(x - \mu))(A(x - \mu))^{T}\right]
+# = A \Sigma A^{T}$$
 #
 # Three lines of expectation algebra, and the only covariance rule the whole
 # renderer needs.
 #
 # ## Stage 1, exact: world to camera
 #
-# `x_cam = W (x - eye)` with `W = cam.R`. Affine, so
+# $x_\text{cam} = W (x - \text{eye})$ with $W = $ `cam.R`. Affine, so
 #
-# ```
-# Sigma_cam = W Sigma W^T
-# ```
+# $$\Sigma_\text{cam} = W \Sigma W^{T}$$
 #
 # ## Stage 2, approximate: the divide
 #
-# ```
-# phi(p) = (fx px/pz + cx,  fy py/pz + cy)
-# ```
+# $$\phi(p) = \left(f_x \frac{p_x}{p_z} + c_x,\;
+# f_y \frac{p_y}{p_z} + c_y\right)$$
 #
-# Taylor at the camera-space mean `(x, y, z)` and keep the linear term. The
-# Jacobian, row by row (differentiate `fx px / pz` by each coordinate):
+# Taylor at the camera-space mean $(x, y, z)$ and keep the linear term. The
+# Jacobian, row by row (differentiate $f_x p_x / p_z$ by each coordinate):
 #
-# ```
-# J = [ fx/z    0      -fx x / z^2 ]
-#     [ 0      fy/z    -fy y / z^2 ]
-# ```
+# $$J = \begin{bmatrix}
+# f_x/z & 0 & -f_x x / z^2 \\
+# 0 & f_y/z & -f_y y / z^2
+# \end{bmatrix}$$
 #
 # Composing both stages:
 #
-# ```
-# Sigma_2d = J W Sigma W^T J^T        (2x2)
-# ```
+# $$\Sigma_{2d} = J W \Sigma W^{T} J^{T} \quad (2 \times 2)$$
 #
 # ## Where the depth went
 #
-# `J` is 2x3. The affine image of the 3D Gaussian is a 3D Gaussian in
-# `(u, v, depth)`; the screen only wants `(u, v)`. For a Gaussian, the marginal
+# $J$ is 2x3. The affine image of the 3D Gaussian is a 3D Gaussian in
+# $(u, v, \text{depth})$; the screen only wants $(u, v)$. For a Gaussian, the
+# marginal
 # over a subset of coordinates is just the covariance with the other rows and
 # columns deleted, and the 2x3 shape performs that deletion in one multiply.
 # So this line integrates the splat along the viewing direction. That is the

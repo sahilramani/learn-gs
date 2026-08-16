@@ -23,42 +23,39 @@
 #
 # ## 1D, and a deliberate difference from statistics
 #
-# ```
-# G(x) = exp(-(x - mu)^2 / (2 sigma^2))
-# ```
+# $$G(x) = \exp\!\left(-\frac{(x - \mu)^2}{2\sigma^2}\right)$$
 #
-# No `1/(sigma sqrt(2 pi))` in front. This is not a probability density; it is
-# an opacity profile. Dropping the normalizer pins the peak at exactly 1.0, so
-# a separate learned opacity `o` scales the whole splat and `o` means "opacity
-# at the center" with no coupling to the splat's size.
+# No $1/(\sigma\sqrt{2\pi})$ in front. This is not a probability density; it
+# is an opacity profile. Dropping the normalizer pins the peak at exactly 1.0,
+# so a separate learned opacity $o$ scales the whole splat and $o$ means
+# "opacity at the center" with no coupling to the splat's size.
 #
 # ## 2D
 #
-# ```
-# G(x) = exp(-0.5 * (x - mu)^T Sigma^-1 (x - mu))
-# ```
+# $$G(x) = \exp\!\left(-\tfrac{1}{2}
+# (x - \mu)^{T} \Sigma^{-1} (x - \mu)\right)$$
 #
-# `Sigma` is 2x2, symmetric, positive definite. The scalar in the exponent is
-# squared Mahalanobis distance; its level sets are ellipses. A 2D Gaussian is
-# an ellipse with soft falloff, nothing more.
+# $\Sigma$ is 2x2, symmetric, positive definite. The scalar in the exponent
+# is squared Mahalanobis distance; its level sets are ellipses. A 2D Gaussian
+# is an ellipse with soft falloff, nothing more.
 #
-# Reading `Sigma = [[a, b], [b, c]]`: eigenvectors are the ellipse axes,
-# eigenvalues are the squared semi-axis lengths (in sigmas), `b = 0` means
-# axis-aligned.
+# Reading $\Sigma = \begin{bmatrix} a & b \\ b & c \end{bmatrix}$:
+# eigenvectors are the ellipse axes, eigenvalues are the squared semi-axis
+# lengths (in sigmas), $b = 0$ means axis-aligned.
 #
 # ## Never build Sigma from raw entries
 #
 # Build it as a product:
 #
-# ```
-# M = R S          (rotation times diagonal scale)
-# Sigma = M M^T = R S S^T R^T
-# ```
+# $$M = R S \quad\text{(rotation times diagonal scale)}$$
 #
-# Any `M M^T` is positive semi-definite by construction: for every vector v,
-# `v^T M M^T v = |M^T v|^2 >= 0`. Optimize `a, b, c` as free numbers instead
-# and gradient descent will eventually produce a negative eigenvalue. Then
-# `Sigma^-1` has a negative eigenvalue too, the exponent turns positive along
+# $$\Sigma = M M^{T} = R S S^{T} R^{T}$$
+#
+# Any $M M^{T}$ is positive semi-definite by construction: for every vector
+# $v$, $v^{T} M M^{T} v = \lVert M^{T} v \rVert^2 \ge 0$. Optimize
+# $a, b, c$ as free numbers instead and gradient descent will eventually
+# produce a negative eigenvalue. Then $\Sigma^{-1}$ has a negative
+# eigenvalue too, the exponent turns positive along
 # that axis, and the splat grows without bound instead of falling off. We
 # demonstrate the explosion below. This is why 3DGS stores scale + rotation
 # rather than covariance entries.
@@ -128,20 +125,21 @@ for r in (1, 2, 3, 4):
     print(f"r = {r}:  exp(-r^2/2) = {np.exp(-r * r / 2):.5f}")
 
 # %% [markdown]
-# Two forces set the cut. Pixels touched grow as r^2, so extending 3 -> 4
+# Two forces set the cut. Pixels touched grow as $r^2$, so extending 3 to 4
 # costs 78% more area. And the output is 8-bit: any contribution below
-# `1/255 = 0.0039` cannot change a pixel. That floor gives an exact cutoff for
-# a splat of opacity `o`:
+# $1/255 = 0.0039$ cannot change a pixel. That floor gives an exact cutoff for
+# a splat of opacity $o$:
+#
+# $$o \exp(-r^2/2) < \tfrac{1}{255}
+# \quad\Longrightarrow\quad r > \sqrt{2 \ln(255 o)}$$
 #
 # ```
-# o * exp(-r^2/2) < 1/255   =>   r > sqrt(2 ln(255 o))
-#
 # o = 1.0  ->  r = 3.33
 # o = 0.5  ->  r = 3.11
 # o = 0.1  ->  r = 2.55
 # ```
 #
-# So the conventional 3-sigma cut is not conservative. For `o > 0.35` it clips
+# So the conventional 3-sigma cut is not conservative. For $o > 0.35$ it clips
 # contributions that would have been visible, up to a few LSBs from a single
 # splat. It survives in 3DGS because training renders through the same clipped
 # rasterizer: the optimizer fits Gaussians to the renderer that clips, so the
@@ -157,11 +155,10 @@ for r in (1, 2, 3, 4):
 # The bounding radius needs the largest eigenvalue of Sigma. For a 2x2 there is
 # a closed form the CUDA kernel will use verbatim:
 #
-# ```
-# mid  = (a + c) / 2
-# lam_max = mid + sqrt(mid^2 - det)
-# radius  = ceil(3 * sqrt(lam_max))
-# ```
+# $$\text{mid} = \frac{a + c}{2}, \qquad
+# \lambda_\max = \text{mid} + \sqrt{\text{mid}^2 - \det\Sigma}$$
+#
+# $$\text{radius} = \lceil 3\sqrt{\lambda_\max} \rceil$$
 
 # %%
 def radius_3sigma(cov):
@@ -240,30 +237,27 @@ plt.show()
 # Here it is two additions, because convolving two Gaussians yields a Gaussian
 # whose covariance is the sum:
 #
-# ```
-# G(0, A) conv G(0, B) = G(0, A + B)
-# ```
+# $$G(0, A) * G(0, B) = G(0, A + B)$$
 #
-# Choose an isotropic prefilter with variance `h` per axis and the entire
+# Choose an isotropic prefilter with variance $h$ per axis and the entire
 # band-limiting step is
 #
-# ```
-# Sigma -> Sigma + h I
-# ```
+# $$\Sigma \rightarrow \Sigma + h I$$
 #
-# 3DGS uses `h = 0.3`, flooring every screen-space sigma at
-# `sqrt(0.3) ~ 0.55` px. The orange curve above shows the result: the sampled
+# 3DGS uses $h = 0.3$, flooring every screen-space sigma at
+# $\sqrt{0.3} \approx 0.55$ px. The orange curve above shows the result: the
+# sampled
 # peak barely moves as the mean slides.
 #
 # ## The bug the fix introduces
 #
 # The integral of the unnormalized kernel over the plane is
 #
-# ```
-# integral of o * exp(-0.5 d^T Sigma^-1 d)  =  o * 2 pi sqrt(det Sigma)
-# ```
+# $$\int o \exp\!\left(-\tfrac{1}{2} d^{T} \Sigma^{-1} d\right) dA
+# = 2 \pi o \sqrt{\det \Sigma}$$
 #
-# Dilation raises `det Sigma` and leaves `o` alone, so the splat gains energy.
+# Dilation raises $\det\Sigma$ and leaves $o$ alone, so the splat gains
+# energy.
 # A thin splat gets brighter as a side effect of being anti-aliased:
 
 # %%

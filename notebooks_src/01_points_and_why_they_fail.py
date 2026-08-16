@@ -21,26 +21,20 @@
 # ## The pinhole
 #
 # Camera at the origin. Light passes through a single hole and lands on a plane
-# at distance `f`. Flip the plane in front of the hole to avoid the upside-down
-# image, and a scene point at camera coordinates `(x, y, z)` lands at
+# at distance $f$. Flip the plane in front of the hole to avoid the upside-down
+# image, and a scene point at camera coordinates $(x, y, z)$ lands at
 #
-# ```
-# x_img = f * x / z
-# y_img = f * y / z
-# ```
+# $$x_\text{img} = \frac{f x}{z}, \qquad y_\text{img} = \frac{f y}{z}$$
 #
 # Similar triangles, nothing else. Everything divides by depth.
 #
 # Image-plane units are scene units. Convert to pixels with the sensor's
 # pixels-per-unit and the pixel location of the optical axis:
 #
-# ```
-# u = fx * x/z + cx
-# v = fy * y/z + cy
-# ```
+# $$u = f_x \frac{x}{z} + c_x, \qquad v = f_y \frac{y}{z} + c_y$$
 #
-# `fx, fy` are focal lengths in pixels. `(cx, cy)` is where the optical axis
-# pierces the image, normally the center.
+# $f_x, f_y$ are focal lengths in pixels. $(c_x, c_y)$ is where the optical
+# axis pierces the image, normally the center.
 #
 # ## Axis convention
 #
@@ -184,14 +178,13 @@ plt.show()
 # %% [markdown]
 # ## Solution
 #
-# A sphere of radius `s` at depth `z` spans world extent `s` perpendicular to
+# A sphere of radius $s$ at depth $z$ spans world extent $s$ perpendicular to
 # the view ray, so its screen radius is
 #
-# ```
-# r_px = fx * s / z        (exactly: fx * s / sqrt(z^2 - s^2), same limit)
-# ```
+# $$r_\text{px} = \frac{f_x s}{z}
+# \qquad\text{exactly } \frac{f_x s}{\sqrt{z^2 - s^2}}\text{, same limit}$$
 #
-# As `z -> 0` the footprint is unbounded: one primitive can cover the entire
+# As $z \to 0$ the footprint is unbounded: one primitive can cover the entire
 # screen, so per-primitive cost is unbounded too. Consequences we now own:
 # a near-plane cull is mandatory, and any fast renderer must bound the work a
 # single primitive can generate (this is where per-pixel-region culling will

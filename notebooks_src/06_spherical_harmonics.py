@@ -46,9 +46,7 @@ plt.legend(); plt.tight_layout(); plt.show()
 #
 # ## View direction, per splat
 #
-# ```
-# d = normalize(mean - cam.eye)
-# ```
+# $$d = \frac{\mu - \text{eye}}{\lVert \mu - \text{eye} \rVert}$$
 #
 # One direction per splat per frame, taken at the mean. Pixels inside a
 # splat's footprint see slightly different true directions; the official
@@ -73,8 +71,9 @@ print(dirs.shape, "unit view directions")
 #
 # A view-dependent color is a function on the unit sphere, one per channel.
 # The representation the whole field uses is a truncated spherical harmonic
-# expansion: polynomials in the direction components `(x, y, z)`, organized
-# in degree bands `l = 0..3` with `2l + 1` functions per band, 16 functions
+# expansion: polynomials in the direction components $(x, y, z)$, organized
+# in degree bands $l = 0 \ldots 3$ with $2l + 1$ functions per band, 16
+# functions
 # total. Low degrees are smooth, wide lobes; each added band buys sharper
 # directional detail. The coefficients are the stored numbers: 16 per
 # channel, 48 per splat, exactly the ply's color fields.
@@ -317,16 +316,13 @@ plt.show()
 # For an orthonormal basis, the truncated expansion that minimizes squared
 # error has coefficients given by projection:
 #
-# ```
-# coeff_i = integral(f(d) b_i(d) dA)  ~  (4 pi / N) sum_n f(d_n) b_i(d_n)
-# ```
+# $$c_i = \int_{S^2} f(d)\, b_i(d)\, dA
+# \;\approx\; \frac{4\pi}{N} \sum_{n} f(d_n)\, b_i(d_n)$$
 #
 # Take a synthetic sheen, a Phong-style lobe around a fixed world direction
 # `L`, and project it:
 #
-# ```
-# f(d) = 0.45 * max(dot(d, L), 0)^4
-# ```
+# $$f(d) = 0.45 \, \max(d \cdot L, 0)^{4}$$
 #
 # More bands, better fit. The residual must drop as each band is added, and
 # the assert holds the projection formula to that.

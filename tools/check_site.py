@@ -90,9 +90,45 @@ def check_built():
             problems.append("%s does not link the site stylesheet"
                             % page.relative_to(SITE))
 
+    check_math(notebooks)
     check_cross_links(pages, notebooks)
     check_external_tabs(pages)
     print("checked %d pages (%d notebooks)" % (len(pages), len(notebooks)))
+
+
+def check_math(notebooks):
+    """MathJax linebreaking stays off, and no raw LaTeX reaches the reader.
+
+    build_site.py flips nbconvert's automatic-linebreak setting, without
+    which every inline expression takes a line of its own. If nbconvert
+    changes that block, the flip silently stops matching and the pages
+    regress in a way only a human reading them would notice.
+    """
+    withmath = 0
+    for page in notebooks:
+        text = page.read_text()
+        if "automatic: true" in text:
+            problems.append(
+                "%s still has MathJax automatic linebreaks on; inline math "
+                "will take its own line" % page.relative_to(SITE))
+        body = text[text.find("<body"):]
+        prose = re.sub(r"<(script|style)[^>]*>.*?</\1>", "", body, flags=re.S)
+        if "$$" in prose:
+            withmath += 1
+        # A LaTeX command loose in the prose means a delimiter did not pair
+        # up. Display math has to come out first: its own commands are not
+        # stray, and stripping single dollars alone would leave them behind.
+        outside = re.sub(r"\$\$.*?\$\$", "", prose, flags=re.S)
+        # Inline math may wrap across a line and still be one expression;
+        # a blank line ends the paragraph and would genuinely break it.
+        outside = re.sub(r"\$(?:[^$\n]|\n(?!\n))*\$", "", outside)
+        for cmd in re.findall(r"\\(?:frac|partial|Sigma|alpha|sum|sqrt)\b",
+                              outside):
+            problems.append("%s has unrendered LaTeX (%s) outside math "
+                            "delimiters" % (page.relative_to(SITE), cmd))
+            break
+    print("math: %d of %d notebooks carry equations" % (withmath,
+                                                        len(notebooks)))
 
 
 def check_external_tabs(pages):

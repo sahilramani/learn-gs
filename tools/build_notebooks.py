@@ -28,6 +28,13 @@ DST = ROOT / "notebooks"
 # slow runner as a broken notebook.
 TIMEOUT = int(os.environ.get("NB_TIMEOUT", "1500"))
 
+# The first matplotlib import in a fresh environment writes "Matplotlib is
+# building the font cache" to stderr, and whichever notebook happens to run
+# first captures that into its committed output. Building the cache here,
+# before any kernel starts, keeps it out of the notebooks. The cache is on
+# disk and shared, so doing it in this process covers the kernels too.
+import matplotlib.font_manager  # noqa: E402  (imported for the side effect)
+
 pattern = sys.argv[1] if len(sys.argv) > 1 else ""
 sources = sorted(p for p in SRC.glob("*.py") if pattern in p.name)
 if not sources:
