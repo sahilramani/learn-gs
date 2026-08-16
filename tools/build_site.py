@@ -266,22 +266,36 @@ SAME_SITE = ("https://www.sahilramani.com", "http://www.sahilramani.com",
 ANCHOR = re.compile(r"<a\b[^>]*>")
 
 
-# nbconvert's template configures MathJax with automatic linebreaking, which
-# wraps every expression in a full-width table cell so long equations can
-# break. That is right for display math and wrong for inline math: an inline
-# $z$ takes a line of its own and splits the sentence around it. MathJax
-# marks those cells display:table-cell !important, so CSS cannot win; the
-# honest fix is the setting itself. Equations here are short enough that
-# losing automatic breaking costs nothing, and .MJXc-display scrolls instead.
-LINEBREAKS = re.compile(r"(CommonHTML:\s*\{\s*linebreaks:\s*\{\s*automatic:\s*)"
-                        r"true")
+# Two things wrong with nbconvert's MathJax settings for this site.
+#
+# It turns on automatic linebreaking, which wraps every expression in a
+# full-width table cell so long equations can break. That is right for
+# display math and wrong for inline math: an inline $z$ takes a line of its
+# own and splits the sentence around it. MathJax marks those cells
+# display:table-cell !important, so CSS cannot win. Equations here are short
+# enough that losing automatic breaking costs nothing, and .MJXc-display
+# scrolls instead.
+#
+# And MathJax matches its x-height to the surrounding text, which lands
+# noticeably smaller than the 16px prose: subscripts and the bars in
+# fractions get thin enough to squint at. scale is a percentage.
+MATH_SCALE = 125
+
+COMMONHTML = re.compile(
+    r"CommonHTML:\s*\{\s*linebreaks:\s*\{\s*automatic:\s*true\s*\}\s*\}")
+
+REPLACEMENT = ("CommonHTML: {\n"
+               "                    scale: %d,\n"
+               "                    linebreaks: { automatic: false }\n"
+               "                }" % MATH_SCALE)
 
 
-def no_math_linebreaks(page):
-    page, hit = LINEBREAKS.subn(r"\1false", page, count=1)
+def tune_mathjax(page):
+    page, hit = COMMONHTML.subn(lambda m: REPLACEMENT, page, count=1)
     if not hit:
-        sys.exit("could not find MathJax's linebreak setting; nbconvert's "
-                 "template changed and inline math will break across lines")
+        sys.exit("could not find MathJax's CommonHTML block; nbconvert's "
+                 "template changed, so inline math will break across lines "
+                 "and equations will render at the default size")
     return page
 
 
@@ -382,7 +396,7 @@ for src in sources:
         sys.exit("no </body> in the rendered %s" % src.stem)
 
     dst = OUT / (src.stem + ".html")
-    dst.write_text(external_tabs(no_math_linebreaks(body)))
+    dst.write_text(external_tabs(tune_mathjax(body)))
     print("rendered", dst.relative_to(ROOT), "(%d KB)" % (len(body) // 1024))
 
 described = curriculum()
