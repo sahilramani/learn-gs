@@ -1,11 +1,15 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "gsplat-edu"
 version = "0.1.0"
 description = "Educational Gaussian splatting renderer, built notebook by notebook"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Sahil Ramani", email = "sahilramani@gmail.com" }]
 requires-python = ">=3.10"
 dependencies = ["numpy", "matplotlib"]
 

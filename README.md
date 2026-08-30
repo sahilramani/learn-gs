@@ -109,3 +109,17 @@ working agreement.
 - Kerbl, Kopanas, Leimkuehler, Drettakis. 3D Gaussian Splatting for Real-Time Radiance Field Rendering. SIGGRAPH 2023.
 - Zwicker, Pfister, van Baar, Gross. EWA Volume Splatting. IEEE Visualization 2001.
 - Yu et al. Mip-Splatting: Alias-free 3D Gaussian Splatting. CVPR 2024.
+
+## License
+
+MIT, see [LICENSE](LICENSE). That covers everything in this repository: the
+package, the kernels, the training scripts, and the notebook prose and figures
+alike. Copy any of it into your own work.
+
+Nothing third-party is vendored here, and no scene data ships with the repo.
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) records the licenses of the
+dependencies, of the JupyterLab stylesheet and MathJax that the published site
+serves, and two things worth knowing before you reuse code: `plyfile` is
+GPL-3.0-or-later and notebook 07 imports it, and any trained scene you drop
+into `data/` carries its own terms, which for the Inria pretrained models are
+non-commercial.
